@@ -1,5 +1,7 @@
 #include<stdlib.h>
 #include<ncurses.h>
+#include<sys/ioctl.h>
+#include<stdio.h>
 
 typedef struct 
 {
@@ -156,6 +158,11 @@ void main()
     // se inicializa Ncurses
     initscr();
     crmode();
+    // cogemos tamaño ventana 
+    struct winsize w;
+    ioctl(0, TIOCGWINSZ, &w);
+    int lines = w.ws_row;
+    int columns = w.ws_col;
     /* Inicializaciones variables */
     WINDOW *w1;
     WINDOW *w2;
