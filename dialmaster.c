@@ -29,9 +29,18 @@ void refreshWindow1(WINDOW *w1,char listProcess[][15],char listStates[][15],int 
     mvwprintw(w1,p+3,distanceW1,"%s",itemobjects);
 }
 
-ActivateWindow activateWindows1(WINDOW *w1,char listProcess[][15],char listStates[][15],int p,int s,int com1,int maxItemsProcess,int distanceW1,int viewDetails)
+void refreshWindow2(WINDOW *w1,char listAdvancedControls[][25],int c,int distanceW1)
+{
+    //Función para dibujar la primera ventana que cambia frecuentemente
+    //c -> variable de index advanced controls
+    mvwprintw(w1,c+3,distanceW1,"%s",listAdvancedControls[c]);
+}
+
+ActivateWindow activateWindows1(WINDOW *w1,char listProcess[][15],char listStates[][15],char listAdvancedControls[][25],int p,int s,int c,int com1,int distanceW1,int viewDetails)
 {
     //Función donde la primera ventana se activa
+    int maxItemsProcess=sizeof(listProcess)/sizeof(listProcess[0]);
+    int maxAdvancedControls=sizeof(listProcess)/sizeof(listProcess[0]);
     //Margen derecho para la caja de elementos
     refreshWindow1(w1,listProcess,listStates,p,s,distanceW1);
     //Si flecha arriba se sube en la listobjectsa, si flecha abajo se baja en la listobjectsa
@@ -39,28 +48,52 @@ ActivateWindow activateWindows1(WINDOW *w1,char listProcess[][15],char listState
     {
         case KEY_UP:
         {
-            p--;
-            p = (p<0) ? maxItemsProcess-1 : p;
+            if(viewDetails==0)
+            {
+                p--;
+                p = (p<0) ? maxItemsProcess-1 : p;
+            }
+            else
+            {
+                c--;
+                c = (c<0) ? maxItemsProcess-1 : c;
+            }
             break;
         }
         case KEY_DOWN:
         {
-            p++;
-            p = (p>=maxItemsProcess) ? 0 : p;
+            if(viewDetails==0)
+            {
+                p++;
+                p = (p>=maxItemsProcess) ? 0 : p;
+            }
+            else
+            {
+                
+            }
             break;
         }
         case KEY_RIGHT:
         {
             viewDetails=1;
+            break;
         }
         case KEY_LEFT:
         {
             viewDetails=0;
+            break;
         }
     }
     // pinto el elemento seleccionado
     wattron(w1,A_STANDOUT);
-    refreshWindow1(w1,listProcess,listStates,p,s,distanceW1);
+    if(viewDetails==0)
+    {
+        refreshWindow1(w1,listProcess,listStates,p,s,distanceW1);
+    }
+    else
+    {
+        refreshWindow2(w1,listAdvancedControls,c,distanceW1);
+    }
     wattroff(w1,A_STANDOUT);
     ActivateWindow Res;
     Res.counter=p;
@@ -81,9 +114,10 @@ void main()
     w1 = newwin(26,35,1,1); 
     w2 = newwin(5,155,27,1);
     w3 = newwin(26,120,1,36);
-    char listProcess[][15] = { "DialServer ", "DialReport ", "DialContact", "Asterisk   ", "ipTables   " };
-    char listStates[][15] = { "            OK", "           RIP", "   Starting...", "   Stopping...", "           ???"};
-    char listControls[][25] = { "F1-MainLog  ", "F2-WebServiceLog   ", "F3-SpreadLog"};
+    char listProcess[][15] = {"DialServer ","DialReport ","DialContact","Asterisk   ","ipTables   "};
+    char listStates[][15] = {"            OK","           RIP","   Starting...","   Stopping...","           ???"};
+    char listGeneralControls[][25] = {"F1-MainLog  ","F2-WebServiceLog   ","F3-SpreadLog"};
+    char listAdvancedControls[][25] = {"start  ","stop   ","restart","reload "};
     int distanceW1=2;
     int distanceW2=25;
     int viewDetails=0;
@@ -112,10 +146,10 @@ void main()
         refreshWindow1(w1,listProcess,listStates,p,s,distanceW1);
     }
 
-    int maxItemsControls = sizeof(listControls)/sizeof(listControls[0]);
+    int maxItemsControls = sizeof(listGeneralControls)/sizeof(listGeneralControls[0]);
     for(c=0;c<maxItemsControls;c++) 
     {
-        mvwprintw(w2,2,(distanceW2*c)+2,"%s",listControls[c]);
+        mvwprintw(w2,2,(distanceW2*c)+2,"%s",listGeneralControls[c]);
     }
 
     // se refresca las consolas
@@ -134,7 +168,7 @@ void main()
     {
         if(activeWindow==1)
         {
-            Res=activateWindows1(w1,listProcess,listStates,p,s,com1,maxItemsProcess,distanceW1,viewDetails);
+            Res=activateWindows1(w1,listProcess,listStates,listAdvancedControls,p,s,c,com1,distanceW1,viewDetails);
             p=Res.counter;
             viewDetails=Res.viewDetails;
         }
