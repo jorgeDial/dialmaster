@@ -3,46 +3,94 @@
 
 typedef struct 
 {
-    int counter;
-    int viewDetails;
-}ActivateWindow;
+    WINDOW *w1;
+    WINDOW *w2;
+    WINDOW *w3;
+}multiWindows;
 
-void refreshWindows(WINDOW *w1, WINDOW *w2, WINDOW *w3)
+typedef struct 
 {
-    //Función para dibujar las ventanas
-    box(w1,0,0); 
-    wrefresh(w1);
-    box(w2,0,0); 
-    wrefresh(w2);
-    box(w3,0,0); 
-    wrefresh(w3);
-    return;
-}
+    multiWindows (w1,w2,w3);
+    char listProcess[][25];
+    char listStates[][25];
+    char listGeneralControls[][25];
+    char listAdvancedControls[][25];
+    int maxItemsProcess;
+    int maxItemsStates;
+    int maxItemsGeneralControls;
+    int maxItemsAdvancedControls;
+    int distanceW1;
+    int distanceW2;
+    int viewDetails;
+    char escapeApp; 
+    int com1;
+    int p;
+    int s;
+    int c;
+    int activeWindow;
+    float timeToRefresh;
+}Args;
 
-void refreshWindow1(WINDOW *w1,char listProcess[][15],char listStates[][15],int p,int s,int distanceW1)
+void printProcess(Args Arg)
 {
     //Función para dibujar la primera ventana que cambia frecuentemente
     //p -> variable de index process
     //s -> variable de index status
     char itemobjects[30];
-    sprintf(itemobjects,"%s  %s",listProcess[p],listStates[s]);
-    mvwprintw(w1,p+3,distanceW1,"%s",itemobjects);
+    sprintf(itemobjects,"%s  %s",Arg.listProcess[Arg.p],Arg.listStates[Arg.s]);
+    mvwprintw(Arg.multiWindow.w1,Arg.p+3,Arg.distanceW1,"%s",itemobjects);
 }
 
-void refreshWindow2(WINDOW *w1,char listAdvancedControls[][25],int c,int distanceW1)
+void refreshWindows(Args Arg)
 {
-    //Función para dibujar la primera ventana que cambia frecuentemente
-    //c -> variable de index advanced controls
-    mvwprintw(w1,c+3,distanceW1,"%s",listAdvancedControls[c]);
+    //Función para dibujar las ventanas
+    if(Arg.viewDetails==0)
+    {
+        mvwprintw(Arg.multiWindow.w1,1,Arg.distanceW1,"%s","PROCESOS             ESTADO");
+    }
+    else
+    {
+        mvwprintw(Arg.multiWindow.w1,1,Args.distanceW1,"%s%c-%c","PROCESO: ",Args.listProcess[Args.p],Args.listStates[Args.s]);
+    }
+    // imprimo listProcess - se seleciona el primer elemento
+    for(Args.p=0;Args.p<Args.maxItemsProcess;Args.p++) 
+    {
+        if(p==0) 
+        {
+            wattron(Arg.multiWindow.w1,A_STANDOUT); // se enciende el primer itemobjects
+        }
+        else
+        {
+            wattroff(Arg.multiWindow.w1,A_STANDOUT); // se apaga el primer itemobjects
+        }
+        printProcess(Arg.multiWindow.w1,Args.listProcess,Args.listStates,Args.p,Args.s,Args.distanceW1);
+    }
+
+    for(c=0;c<maxItemsControls;c++) 
+    {
+        mvwprintw(Arg.multiWindow.w2,2,(distanceW2*c)+2,"%s",listGeneralControls[c]);
+    }
+    box(Arg.multiWindow.w1,0,0); 
+    wrefresh(Arg.multiWindow.w1);
+    box(Arg.multiWindow.w2,0,0); 
+    wrefresh(Arg.multiWindow.w2);
+    box(Arg.multiWindow.w3,0,0); 
+    wrefresh(Arg.multiWindow.w3);
+    return;
 }
 
-ActivateWindow activateWindows1(WINDOW *w1,char listProcess[][15],char listStates[][15],char listAdvancedControls[][25],int p,int s,int c,int com1,int distanceW1,int viewDetails)
+Args activateWindows(Args Arg)
 {
     //Función donde la primera ventana se activa
-    int maxItemsProcess=sizeof(listProcess)/sizeof(listProcess[0]);
-    int maxAdvancedControls=sizeof(listProcess)/sizeof(listProcess[0]);
     //Margen derecho para la caja de elementos
-    refreshWindow1(w1,listProcess,listStates,p,s,distanceW1);
+    if(viewDetails==0)
+    {
+        printProcess(Arg.multiWindow.w1,listProcess,listStates,p,s,distanceW1);
+    }
+    else
+    {
+        mvwprintw(Arg.multiWindow.w1,c+3,distanceW1,"%s",listAdvancedControls[c]);
+    }
     //Si flecha arriba se sube en la listobjectsa, si flecha abajo se baja en la listobjectsa
     switch(com1) 
     {
@@ -56,7 +104,7 @@ ActivateWindow activateWindows1(WINDOW *w1,char listProcess[][15],char listState
             else
             {
                 c--;
-                c = (c<0) ? maxItemsProcess-1 : c;
+                c = (c<0) ? maxAdvancedControls-1 : c;
             }
             break;
         }
@@ -69,7 +117,8 @@ ActivateWindow activateWindows1(WINDOW *w1,char listProcess[][15],char listState
             }
             else
             {
-                
+                c++;
+                c = (c>=maxAdvancedControls) ? 0 : c;
             }
             break;
         }
@@ -85,20 +134,21 @@ ActivateWindow activateWindows1(WINDOW *w1,char listProcess[][15],char listState
         }
     }
     // pinto el elemento seleccionado
-    wattron(w1,A_STANDOUT);
+    wattron(Arg.multiWindow.w1,A_STANDOUT);
     if(viewDetails==0)
     {
-        refreshWindow1(w1,listProcess,listStates,p,s,distanceW1);
+        printProcess(Arg.multiWindow.w1,listProcess,listStates,p,s,distanceW1);
     }
     else
     {
-        refreshWindow2(w1,listAdvancedControls,c,distanceW1);
+        refreshWindow2(Arg.multiWindow.w1,listAdvancedControls,c,distanceW1);
     }
-    wattroff(w1,A_STANDOUT);
-    ActivateWindow Res;
-    Res.counter=p;
-    Res.viewDetails=viewDetails;
-    return Res;
+    wattroff(Arg.multiWindow.w1,A_STANDOUT);
+    refreshWindows(Arg);
+    Arg.p=p;
+    Arg.c=c;
+    Arg.viewDetails=viewDetails;
+    return Arg;
 }
 
 void main() 
@@ -114,10 +164,14 @@ void main()
     w1 = newwin(26,35,1,1); 
     w2 = newwin(5,155,27,1);
     w3 = newwin(26,120,1,36);
-    char listProcess[][15] = {"DialServer ","DialReport ","DialContact","Asterisk   ","ipTables   "};
-    char listStates[][15] = {"            OK","           RIP","   Starting...","   Stopping...","           ???"};
+    char listProcess[][25] = {"DialServer ","DialReport ","DialContact","Asterisk   ","ipTables   "};
+    char listStates[][25] = {"            OK","           RIP","   Starting...","   Stopping...","           ???"};
     char listGeneralControls[][25] = {"F1-MainLog  ","F2-WebServiceLog   ","F3-SpreadLog"};
     char listAdvancedControls[][25] = {"start  ","stop   ","restart","reload "};
+    int maxItemsProcess=sizeof(listProcess)/sizeof(listProcess[0]);
+    int maxItemsStates=sizeof(listStates)/sizeof(listStates[0]);
+    int maxItemsGeneralControls=sizeof(listGeneralControls)/sizeof(listGeneralControls[0]);
+    int maxItemsAdvancedControls=sizeof(listAdvancedControls)/sizeof(listAdvancedControls[0]);
     int distanceW1=2;
     int distanceW2=25;
     int viewDetails=0;
@@ -125,14 +179,13 @@ void main()
     int com1;
     int p=0,s=0,c=0,activeWindow=1;
     float timeToRefresh=1;
-    ActivateWindow Res;
+
+    multiWindows multiWindow(w1,w2,w3);
+    Args Arg(multiWindow,listProcess,listStates,listGeneralControls,listAdvancedControls,maxItemsProcess,maxItemsStates,maxItemsGeneralControls,maxItemsAdvancedControls,distanceW1,distanceW2,viewDetails,escapeApp,com1,p,s,c,activeWindow,timeToRefresh);
 
     /* Init App */
-    refreshWindows(w1,w2,w3);
-    
     mvwprintw(w1,1,distanceW1,"%s","PROCESOS             ESTADO");
     // imprimo listProcess - se seleciona el primer elemento
-    int maxItemsProcess = sizeof(listProcess)/sizeof(listProcess[0]);
     for(p=0;p<maxItemsProcess;p++) 
     {
         if(p==0) 
@@ -143,17 +196,20 @@ void main()
         {
             wattroff(w1,A_STANDOUT); // se apaga el primer itemobjects
         }
-        refreshWindow1(w1,listProcess,listStates,p,s,distanceW1);
+        printProcess(Arg);
     }
 
-    int maxItemsControls = sizeof(listGeneralControls)/sizeof(listGeneralControls[0]);
     for(c=0;c<maxItemsControls;c++) 
     {
         mvwprintw(w2,2,(distanceW2*c)+2,"%s",listGeneralControls[c]);
     }
-
     // se refresca las consolas
-    refreshWindows(w1,w2,w3);
+    box(w1,0,0); 
+    wrefresh(w1);
+    box(w2,0,0); 
+    wrefresh(w2);
+    box(w3,0,0); 
+    wrefresh(w3);
  
     p=0;
     c=0;
@@ -168,12 +224,13 @@ void main()
     {
         if(activeWindow==1)
         {
-            Res=activateWindows1(w1,listProcess,listStates,listAdvancedControls,p,s,c,com1,distanceW1,viewDetails);
-            p=Res.counter;
-            viewDetails=Res.viewDetails;
+            Arg=activateWindows(Arg);
+            p=Arg.p;
+            c=Arg.c;
+            viewDetails=Arg.viewDetails;
         }
     }
     //Cierro las ventanas
-    delwin( w1 );
+    delwin(w1);
     endwin();
 }
