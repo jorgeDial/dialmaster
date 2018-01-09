@@ -25,6 +25,7 @@ typedef struct
 
 void clearWindows(Args Arg)
 {
+    //Para hacer una limpieza de la ventana
     int i;
     for(i=0;i<10;i++) 
     {
@@ -38,7 +39,7 @@ void printProcess(Args Arg,char listProcess[][30],char listStates[][30],int i)
     //p -> variable de index process
     //s -> variable de index status
     char itemobjects[30];
-    sprintf(itemobjects,"%s  %s",listProcess[i],listStates[Arg.s]);
+    sprintf(itemobjects,"%s - %s",listProcess[i],listStates[Arg.s]);
     if(Arg.activeBrush)
     {
         wattron(Arg.w1,A_STANDOUT);
@@ -74,7 +75,7 @@ void refreshWindows(Args Arg,char listProcess[][30],char listStates[][30],char l
     wattroff(Arg.w1,A_STANDOUT);
     if(Arg.viewDetails==0)
     {
-        mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS             ESTADO");
+        mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS - ESTADO");
         wattron(Arg.w1,A_STANDOUT);
         // imprimo listProcess - se seleciona el primer elemento
         int i;
@@ -176,6 +177,21 @@ Args activateWindows(Args Arg,char listProcess[][30],char listStates[][30],char 
             Arg.viewDetails=0;
             break;
         }
+        case 10:
+        {
+            //case 10 -> KEY_ENTER
+            if(Arg.viewDetails==0)
+            {
+                //
+            }
+            else
+            {
+                char systemCommand[50];
+                sprintf(systemCommand,"%s  %s %s","service",listProcess[Arg.p],listAdvancedControls[Arg.c]);
+                system(systemCommand);
+            }
+            break;
+        }
     }
     refreshWindows(Arg,listProcess,listStates,listAdvancedControls,listGeneralControls);
     return Arg;
@@ -192,8 +208,8 @@ int main()
     Arg.w1 = newwin(26,35,1,1); 
     Arg.w2 = newwin(5,155,27,1);
     Arg.w3 = newwin(26,120,1,36);
-    char listProcess[5][30]={"DialServer ","DialReport ","DialContact","Asterisk   ","ipTables   "};
-    char listStates[5][30]={"            OK","           RIP","   Starting...","   Stopping...","           ???"};
+    char listProcess[5][30]={"dialserver","dialreport","dialcontact","asterisk","iptables"};
+    char listStates[5][30]={"OK","RIP","Starting...","Stopping...","???"};
     char listGeneralControls[3][30]={"F1-MainLog  ","F2-WebServiceLog   ","F3-SpreadLog"};
     char listAdvancedControls[4][30]={"start","stop","reload","restart"};
     Arg.maxItemsProcess=sizeof(listProcess)/sizeof(listProcess[0]);
