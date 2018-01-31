@@ -1,8 +1,15 @@
 #include<stdlib.h>
 #include<ncurses.h>
+#include<string>
+// Hay que pasarle los array de chars a la variable Arg como punteros luego corregir la estetica pero 
+// sobre todo que pueda coger la información de un log
 
-typedef struct 
+typedef struct arguments
 {
+    char listProcess[5][30];
+    char listStates[5][30];
+    char listGeneralControls[3][30];
+    char listAdvancedControls[5][30];
     WINDOW *w1;
     WINDOW *w2;
     WINDOW *w3;
@@ -21,7 +28,7 @@ typedef struct
     int activeWindow;
     float timeToRefresh;
     int activeBrush;
-}Args;
+} Args;
 
 void clearWindows(Args Arg)
 {
@@ -33,13 +40,14 @@ void clearWindows(Args Arg)
     }
 }
 
-void printProcess(Args Arg,char listProcess[][30],char listStates[][30],int i)
+void printProcess(Args Arg,int i)
 {
     //Función para dibujar la primera ventana que cambia frecuentemente
     //p -> variable de index process
     //s -> variable de index status
     char itemobjects[30];
-    sprintf(itemobjects,"%s - %s",listProcess[i],listStates[Arg.s]);
+    
+    sprintf(itemobjects,"%s - %s",Arg.listProcess[i],Arg.listStates[Arg.s]);
     if(Arg.activeBrush)
     {
         wattron(Arg.w1,A_STANDOUT);
@@ -52,10 +60,11 @@ void printProcess(Args Arg,char listProcess[][30],char listStates[][30],int i)
     return;
 }
 
-void printAdvancedControls(Args Arg,char listAdvancedControls[][30],int i)
+void printAdvancedControls(Args Arg,int i)
 {
     //Función para dibujar la primera ventana que cambia frecuentemente
     //c -> variable de index controls
+    
     if(Arg.activeBrush)
     {
         wattron(Arg.w1,A_STANDOUT);
@@ -64,20 +73,31 @@ void printAdvancedControls(Args Arg,char listAdvancedControls[][30],int i)
     {
         wattroff(Arg.w1,A_STANDOUT);
     }
-    mvwprintw(Arg.w1,i+3,Arg.distanceW1,"%s",listAdvancedControls[i]);
+    mvwprintw(Arg.w1,i+3,Arg.distanceW1,"%s",Arg.listAdvancedControls[i]);
     return;
 }
 
-void refreshWindows(Args Arg,char listProcess[][30],char listStates[][30],char listAdvancedControls[][30],char listGeneralControls[][30])
+void printOnSecondWindows(Args Arg)
+{
+    //Función para dibujar la primera ventana que cambia frecuentemente
+    //c -> variable de index controls
+    char systemCommand[50]="cat /home/fran/Escritorio/prueba";
+    system(systemCommand);
+    mvwprintw(Arg.w2,3,3,"%c",'c');
+    return;
+}
+
+void refreshWindows(Args Arg)
 {
     //Función para dibujar las ventanas
     clearWindows(Arg);
     wattroff(Arg.w1,A_STANDOUT);
+    
     if(Arg.viewDetails==0)
     {
         mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS - ESTADO");
         wattron(Arg.w1,A_STANDOUT);
-        // imprimo listProcess - se seleciona el primer elemento
+        // imprimo Arg.listProcess - se seleciona el primer elemento
         int i;
         for(i=0;i<Arg.maxItemsProcess;i++) 
         {
@@ -93,14 +113,14 @@ void refreshWindows(Args Arg,char listProcess[][30],char listStates[][30],char l
             {
                 Arg.activeBrush=0;
             }
-            printProcess(Arg,listProcess,listStates,i);
+            printProcess(Arg,i);
         }
     }
     else
     {
-        mvwprintw(Arg.w1,1,Arg.distanceW1,"%s%s%s","Proc: ",listProcess[Arg.p],listStates[Arg.s]);
+        mvwprintw(Arg.w1,1,Arg.distanceW1,"%s%s%s","Proc: ",Arg.listProcess[Arg.p],Arg.listStates[Arg.s]);
         wattron(Arg.w1,A_STANDOUT);
-        // imprimo listProcess - se seleciona el primer elemento
+        // imprimo Arg.listProcess - se seleciona el primer elemento
         int i;
         for(i=0;i<Arg.maxItemsAdvancedControls;i++) 
         {
@@ -116,13 +136,13 @@ void refreshWindows(Args Arg,char listProcess[][30],char listStates[][30],char l
             {
                 Arg.activeBrush=0;
             }
-            printAdvancedControls(Arg,listAdvancedControls,i);
+            printAdvancedControls(Arg,i);
         }
     }
     wattroff(Arg.w1,A_STANDOUT);
     for(Arg.c=0;Arg.c<Arg.maxItemsGeneralControls;Arg.c++) 
     {
-        mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",listGeneralControls[Arg.c]);
+        mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",Arg.listGeneralControls[Arg.c]);
     }
     box(Arg.w1,0,0); 
     wrefresh(Arg.w1);
@@ -133,10 +153,12 @@ void refreshWindows(Args Arg,char listProcess[][30],char listStates[][30],char l
     return;
 }
 
-Args activateWindows(Args Arg,char listProcess[][30],char listStates[][30],char listAdvancedControls[][30],char listGeneralControls[][30])
+Args activateWindows(Args Arg)
 {
     //Función donde la primera ventana se activa
     //Si flecha arriba se sube en la listobjectsa, si flecha abajo se baja en la listobjectsa
+    //printf("Tecla: %d",Arg.com1);
+    
     switch(Arg.com1) 
     {
         case KEY_UP:
@@ -187,13 +209,19 @@ Args activateWindows(Args Arg,char listProcess[][30],char listStates[][30],char 
             else
             {
                 char systemCommand[50];
-                sprintf(systemCommand,"%s  %s %s","service",listProcess[Arg.p],listAdvancedControls[Arg.c]);
+                sprintf(systemCommand,"%s  %s %s","service",Arg.listProcess[Arg.p],Arg.listAdvancedControls[Arg.c]);
                 system(systemCommand);
             }
             break;
         }
+        case 265:
+        {
+            //case 265 -> KEY_F1
+            printOnSecondWindows(Arg);
+            break;
+        }
     }
-    refreshWindows(Arg,listProcess,listStates,listAdvancedControls,listGeneralControls);
+    refreshWindows(Arg);
     return Arg;
 }
 
@@ -203,19 +231,21 @@ int main()
     initscr();
     crmode();
     /* Inicializaciones variables */
-    Args Arg;
+    Args Arg = 
+    {
+        .listProcess = {"dialserver","dialreport","dialcontact","asterisk","iptables"},
+        .listStates={"OK","RIP","Starting...","Stopping...","???"},
+        .listGeneralControls={"F1-MainLog","F2-WebServiceLog","F3-SpreadLog"},
+        .listAdvancedControls={"start","stop","reload","restart","status"}
+    };
     // nuevas ventanas (Lineas, Columnas, posición Y, posición X)
     Arg.w1 = newwin(26,35,1,1); 
     Arg.w2 = newwin(5,155,27,1);
     Arg.w3 = newwin(26,120,1,36);
-    char listProcess[5][30]={"dialserver","dialreport","dialcontact","asterisk","iptables"};
-    char listStates[5][30]={"OK","RIP","Starting...","Stopping...","???"};
-    char listGeneralControls[3][30]={"F1-MainLog  ","F2-WebServiceLog   ","F3-SpreadLog"};
-    char listAdvancedControls[4][30]={"start","stop","reload","restart"};
-    Arg.maxItemsProcess=sizeof(listProcess)/sizeof(listProcess[0]);
-    Arg.maxItemsStates=sizeof(listStates)/sizeof(listStates[0]);
-    Arg.maxItemsGeneralControls=sizeof(listGeneralControls)/sizeof(listGeneralControls[0]);
-    Arg.maxItemsAdvancedControls=sizeof(listAdvancedControls)/sizeof(listAdvancedControls[0]);
+    Arg.maxItemsProcess=sizeof(Arg.listProcess)/sizeof(Arg.listProcess[0]);
+    Arg.maxItemsStates=sizeof(Arg.listStates)/sizeof(Arg.listStates[0]);
+    Arg.maxItemsGeneralControls=sizeof(Arg.listGeneralControls)/sizeof(Arg.listGeneralControls[0]);
+    Arg.maxItemsAdvancedControls=sizeof(Arg.listAdvancedControls)/sizeof(Arg.listAdvancedControls[0]);
     Arg.distanceW1=2;
     Arg.distanceW2=30;
     Arg.viewDetails=0;
@@ -230,7 +260,8 @@ int main()
 
     /* Init App */
     mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS             ESTADO");
-    // imprimo listProcess - se seleciona el primer elemento
+    // imprimo Arg.listProcess - se seleciona el primer elemento
+    
     for(Arg.p=0;Arg.p<Arg.maxItemsProcess;Arg.p++) 
     {
         if(Arg.p==0) 
@@ -243,13 +274,14 @@ int main()
             // se apaga el primer itemobjects
             Arg.activeBrush=0;
         }
-        printProcess(Arg,listProcess,listStates,Arg.p);
+        printProcess(Arg,Arg.p);
     }
 
     for(Arg.c=0;Arg.c<Arg.maxItemsGeneralControls;Arg.c++) 
     {
-        mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",listGeneralControls[Arg.c]);
+        mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",Arg.listGeneralControls[Arg.c]);
     }
+    
     // se refresca las consolas
     box(Arg.w1,0,0); 
     wrefresh(Arg.w1);
@@ -270,7 +302,7 @@ int main()
     {
         if(Arg.activeWindow==1)
         {
-            Arg=activateWindows(Arg,listProcess,listStates,listAdvancedControls,listGeneralControls);
+            Arg=activateWindows(Arg);
         }
     }
     //Cierro las ventanas
