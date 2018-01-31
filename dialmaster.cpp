@@ -1,6 +1,8 @@
 #include<stdlib.h>
 #include<ncurses.h>
 #include<string>
+#include<sys/ioctl.h>
+#include<stdio.h>
 // Hay que pasarle los array de chars a la variable Arg como punteros luego corregir la estetica pero 
 // sobre todo que pueda coger la información de un log
 
@@ -20,7 +22,8 @@ typedef struct arguments
     int distanceW1;
     int distanceW2;
     int viewDetails;
-    char escapeApp; 
+    char escapeApp1; 
+    char escapeApp2;
     int com1;
     int p;
     int s;
@@ -28,16 +31,45 @@ typedef struct arguments
     int activeWindow;
     float timeToRefresh;
     int activeBrush;
+    int maxWindowsRow;
+    int maxWindowsColumns;
 } Args;
 
-void clearWindows(Args Arg)
+void clearWindows(Args Arg,int maxWindowsRow,int maxWindowsColumns)
 {
     //Para hacer una limpieza de la ventana
     int i;
-    for(i=0;i<10;i++) 
+    for(i=1;i<maxWindowsRow;i++) 
     {
         mvwprintw(Arg.w1,i,Arg.distanceW1,"%s","                               ");
     }
+}
+
+void resizeWindows(Args Arg)
+{
+    //Función para el resize de las ventanas
+    struct winsize windowGeneral;
+    ioctl(0, TIOCGWINSZ, &windowGeneral);
+    int maxWindowsRow=windowGeneral.ws_row;
+    int maxWindowsColumns=windowGeneral.ws_col;
+    //printf("row: %d",maxWindowsRow);
+    //printf("columns: %d",maxWindowsColumns);
+    //Extendo la w1 a toda pantalla para acclarar los rastros de las actualizaciones de las ventanas
+    Arg.w1 = newwin(maxWindowsRow,maxWindowsColumns,-1,-1); 
+    box(Arg.w1,0,0); 
+    wrefresh(Arg.w1);
+    
+    Arg.w1 = newwin(maxWindowsRow-15,35,1,1); 
+    Arg.w2 = newwin(5,155,maxWindowsRow-14,1);
+    Arg.w3 = newwin(maxWindowsRow-15,120,1,36);
+    box(Arg.w1,0,0);
+    wrefresh(Arg.w1);
+    box(Arg.w2,0,0);
+    wrefresh(Arg.w2);
+    box(Arg.w3,0,0);
+    wrefresh(Arg.w3);
+    refresh();
+    clearWindows(Arg,maxWindowsRow,maxWindowsColumns);
 }
 
 void printProcess(Args Arg,int i)
@@ -90,12 +122,11 @@ void printOnSecondWindows(Args Arg)
 void refreshWindows(Args Arg)
 {
     //Función para dibujar las ventanas
-    clearWindows(Arg);
     wattroff(Arg.w1,A_STANDOUT);
     
     if(Arg.viewDetails==0)
     {
-        mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS - ESTADO");
+        mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS             ESTADO");
         wattron(Arg.w1,A_STANDOUT);
         // imprimo Arg.listProcess - se seleciona el primer elemento
         int i;
@@ -144,19 +175,12 @@ void refreshWindows(Args Arg)
     {
         mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",Arg.listGeneralControls[Arg.c]);
     }
-    box(Arg.w1,0,0); 
-    wrefresh(Arg.w1);
-    box(Arg.w2,0,0); 
-    wrefresh(Arg.w2);
-    box(Arg.w3,0,0); 
-    wrefresh(Arg.w3);
     return;
 }
 
 Args activateWindows(Args Arg)
 {
     //Función donde la primera ventana se activa
-    //Si flecha arriba se sube en la listobjectsa, si flecha abajo se baja en la listobjectsa
     //printf("Tecla: %d",Arg.com1);
     
     switch(Arg.com1) 
@@ -249,7 +273,8 @@ int main()
     Arg.distanceW1=2;
     Arg.distanceW2=30;
     Arg.viewDetails=0;
-    Arg.escapeApp='q'; 
+    Arg.escapeApp1='q';
+    Arg.escapeApp2='Q'; 
     Arg.com1;
     Arg.p=0;
     Arg.s=0;
@@ -281,14 +306,6 @@ int main()
     {
         mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",Arg.listGeneralControls[Arg.c]);
     }
-    
-    // se refresca las consolas
-    box(Arg.w1,0,0); 
-    wrefresh(Arg.w1);
-    box(Arg.w2,0,0); 
-    wrefresh(Arg.w2);
-    box(Arg.w3,0,0); 
-    wrefresh(Arg.w3);
  
     Arg.p=0;
     Arg.c=0;
@@ -298,8 +315,11 @@ int main()
     curs_set(0); // se esconde el cursor normal
 
     //entrada teclado
-    while((Arg.com1=wgetch(Arg.w1))!=Arg.escapeApp)
+    char keyPress=Arg.com1=wgetch(Arg.w1);
+    while( (keyPress!=Arg.escapeApp1) && (keyPress!=Arg.escapeApp2) )
     {
+        keyPress=Arg.com1=wgetch(Arg.w1);
+        resizeWindows(Arg);
         if(Arg.activeWindow==1)
         {
             Arg=activateWindows(Arg);
@@ -307,6 +327,8 @@ int main()
     }
     //Cierro las ventanas
     delwin(Arg.w1);
+    delwin(Arg.w2);
+    delwin(Arg.w3);
     endwin();
     return 0;
 }
