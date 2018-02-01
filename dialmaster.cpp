@@ -3,8 +3,11 @@
 #include<string>
 #include<sys/ioctl.h>
 #include<stdio.h>
-// Hay que pasarle los array de chars a la variable Arg como punteros luego corregir la estetica pero 
-// sobre todo que pueda coger la información de un log
+#define ESCAPE 27
+#define ENTER 10
+//Variables Globales
+//Variables donde almacenaremos el tamaño de nuestra pantalla
+int windowsDimY, windowsDimX;
 
 typedef struct arguments
 {
@@ -22,54 +25,140 @@ typedef struct arguments
     int distanceW1;
     int distanceW2;
     int viewDetails;
-    char escapeApp1; 
-    char escapeApp2;
-    int com1;
+    int escapeApp1; 
+    int escapeApp2;
+    int keyPress;
     int p;
     int s;
     int c;
     int activeWindow;
     float timeToRefresh;
     int activeBrush;
-    int maxWindowsRow;
-    int maxWindowsColumns;
 } Args;
 
-void clearWindows(Args Arg,int maxWindowsRow,int maxWindowsColumns)
+void clearWindows(Args Arg);
+void refreshWindows(Args Arg);
+void printProcess(Args Arg,int i);
+void printAdvancedControls(Args Arg,int i);
+void printOnSecondWindows(Args Arg);
+void highlightOption(Args Arg);
+Args activateWindows(Args Arg);
+void initializeScreen();
+
+int main() 
+{     
+    // se inicializa Ncurses
+    initscr();
+    cbreak();
+    crmode();
+    /* Inicializaciones variables */
+    Args Arg = 
+    {
+        .listProcess = {"dialserver","dialreport","dialcontact","asterisk","iptables"},
+        .listStates={"OK","RIP","Starting...","Stopping...","???"},
+        .listGeneralControls={"F1-MainLog","F2-WebServiceLog","F3-SpreadLog"},
+        .listAdvancedControls={"start","stop","reload","restart","status"}
+    };
+    // nuevas ventanas (Lineas, Columnas, posición Y, posición X)
+    Arg.w1 = newwin(26,35,1,1); 
+    Arg.w2 = newwin(5,155,27,1);
+    Arg.w3 = newwin(26,120,1,36);
+    Arg.maxItemsProcess=sizeof(Arg.listProcess)/sizeof(Arg.listProcess[0]);
+    Arg.maxItemsStates=sizeof(Arg.listStates)/sizeof(Arg.listStates[0]);
+    Arg.maxItemsGeneralControls=sizeof(Arg.listGeneralControls)/sizeof(Arg.listGeneralControls[0]);
+    Arg.maxItemsAdvancedControls=sizeof(Arg.listAdvancedControls)/sizeof(Arg.listAdvancedControls[0]);
+    Arg.distanceW1=2;
+    Arg.distanceW2=30;
+    Arg.viewDetails=0;
+    Arg.escapeApp1='q';
+    Arg.escapeApp2='Q'; 
+    Arg.keyPress;
+    Arg.p=0;
+    Arg.s=0;
+    Arg.c=0;
+    Arg.activeWindow=1;
+    Arg.timeToRefresh=1;
+    Arg.activeBrush=1;
+
+    /* Init App */
+    initializeScreen();
+    mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS             ESTADO");
+    // imprimo Arg.listProcess - se seleciona el primer elemento
+    
+    for(Arg.p=0;Arg.p<Arg.maxItemsProcess;Arg.p++) 
+    {
+        if(Arg.p==0) 
+        {
+            // se enciende el primer itemobjects
+            Arg.activeBrush=1;
+        }
+        else
+        {
+            // se apaga el primer itemobjects
+            Arg.activeBrush=0;
+        }
+        printProcess(Arg,Arg.p);
+    }
+
+    for(Arg.c=0;Arg.c<Arg.maxItemsGeneralControls;Arg.c++) 
+    {
+        mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",Arg.listGeneralControls[Arg.c]);
+    }
+ 
+    Arg.p=0;
+    Arg.c=0;
+
+    //entrada teclado  
+    refreshWindows(Arg);
+    keypad(Arg.w1, TRUE); // se permite meter numeros en la pestaña w1
+    bool exitWhile=false;
+    while(!exitWhile)
+    {
+        refreshWindows(Arg);
+        if(Arg.activeWindow==1)
+        {
+            Arg=activateWindows(Arg);
+        }
+        Arg.keyPress=wgetch(Arg.w1);
+        if( (Arg.keyPress==Arg.escapeApp1) && (Arg.keyPress==Arg.escapeApp2) )
+        {
+            exitWhile=true;
+        }
+    }
+    //Cierro las ventanas
+    delwin(Arg.w1);
+    delwin(Arg.w2);
+    delwin(Arg.w3);
+    endwin();
+    return 0;
+}
+
+void clearWindows(Args Arg)
 {
     //Para hacer una limpieza de la ventana
     int i;
-    for(i=1;i<maxWindowsRow;i++) 
+    for(i=1;i<windowsDimY;i++) 
     {
         mvwprintw(Arg.w1,i,Arg.distanceW1,"%s","                               ");
     }
 }
 
-void resizeWindows(Args Arg)
+void refreshWindows(Args Arg)
 {
     //Función para el resize de las ventanas
-    struct winsize windowGeneral;
-    ioctl(0, TIOCGWINSZ, &windowGeneral);
-    int maxWindowsRow=windowGeneral.ws_row;
-    int maxWindowsColumns=windowGeneral.ws_col;
-    //printf("row: %d",maxWindowsRow);
-    //printf("columns: %d",maxWindowsColumns);
-    //Extendo la w1 a toda pantalla para acclarar los rastros de las actualizaciones de las ventanas
-    Arg.w1 = newwin(maxWindowsRow,maxWindowsColumns,-1,-1); 
-    box(Arg.w1,0,0); 
-    wrefresh(Arg.w1);
-    
-    Arg.w1 = newwin(maxWindowsRow-15,35,1,1); 
-    Arg.w2 = newwin(5,155,maxWindowsRow-14,1);
-    Arg.w3 = newwin(maxWindowsRow-15,120,1,36);
+    refresh();
+    getmaxyx(stdscr, windowsDimY, windowsDimX);
+    Arg.w1=newwin(windowsDimY-7,35,1,1); 
+    Arg.w2=newwin(5,windowsDimX-5,windowsDimY-6,1);
+    Arg.w3=newwin(windowsDimY-7,windowsDimX-40,1,36);
     box(Arg.w1,0,0);
     wrefresh(Arg.w1);
     box(Arg.w2,0,0);
     wrefresh(Arg.w2);
     box(Arg.w3,0,0);
     wrefresh(Arg.w3);
-    refresh();
-    clearWindows(Arg,maxWindowsRow,maxWindowsColumns);
+    clearWindows(Arg);
+    bkgd(COLOR_PAIR(1));
 }
 
 void printProcess(Args Arg,int i)
@@ -119,7 +208,7 @@ void printOnSecondWindows(Args Arg)
     return;
 }
 
-void refreshWindows(Args Arg)
+void highlightOption(Args Arg)
 {
     //Función para dibujar las ventanas
     wattroff(Arg.w1,A_STANDOUT);
@@ -181,9 +270,9 @@ void refreshWindows(Args Arg)
 Args activateWindows(Args Arg)
 {
     //Función donde la primera ventana se activa
-    //printf("Tecla: %d",Arg.com1);
+    printf("Tecla: %d",Arg.keyPress);
     
-    switch(Arg.com1) 
+    switch(Arg.keyPress) 
     {
         case KEY_UP:
         {
@@ -245,90 +334,25 @@ Args activateWindows(Args Arg)
             break;
         }
     }
-    refreshWindows(Arg);
+    highlightOption(Arg);
     return Arg;
 }
 
-int main() 
-{     
-    // se inicializa Ncurses
-    initscr();
-    crmode();
-    /* Inicializaciones variables */
-    Args Arg = 
+void initializeScreen()
+{
+    if (initscr()!=NULL)
     {
-        .listProcess = {"dialserver","dialreport","dialcontact","asterisk","iptables"},
-        .listStates={"OK","RIP","Starting...","Stopping...","???"},
-        .listGeneralControls={"F1-MainLog","F2-WebServiceLog","F3-SpreadLog"},
-        .listAdvancedControls={"start","stop","reload","restart","status"}
-    };
-    // nuevas ventanas (Lineas, Columnas, posición Y, posición X)
-    Arg.w1 = newwin(26,35,1,1); 
-    Arg.w2 = newwin(5,155,27,1);
-    Arg.w3 = newwin(26,120,1,36);
-    Arg.maxItemsProcess=sizeof(Arg.listProcess)/sizeof(Arg.listProcess[0]);
-    Arg.maxItemsStates=sizeof(Arg.listStates)/sizeof(Arg.listStates[0]);
-    Arg.maxItemsGeneralControls=sizeof(Arg.listGeneralControls)/sizeof(Arg.listGeneralControls[0]);
-    Arg.maxItemsAdvancedControls=sizeof(Arg.listAdvancedControls)/sizeof(Arg.listAdvancedControls[0]);
-    Arg.distanceW1=2;
-    Arg.distanceW2=30;
-    Arg.viewDetails=0;
-    Arg.escapeApp1='q';
-    Arg.escapeApp2='Q'; 
-    Arg.com1;
-    Arg.p=0;
-    Arg.s=0;
-    Arg.c=0;
-    Arg.activeWindow=1;
-    Arg.timeToRefresh=1;
-    Arg.activeBrush=1;
-
-    /* Init App */
-    mvwprintw(Arg.w1,1,Arg.distanceW1,"%s","PROCESOS             ESTADO");
-    // imprimo Arg.listProcess - se seleciona el primer elemento
-    
-    for(Arg.p=0;Arg.p<Arg.maxItemsProcess;Arg.p++) 
-    {
-        if(Arg.p==0) 
+        if(has_colors())
         {
-            // se enciende el primer itemobjects
-            Arg.activeBrush=1;
-        }
-        else
-        {
-            // se apaga el primer itemobjects
-            Arg.activeBrush=0;
-        }
-        printProcess(Arg,Arg.p);
-    }
-
-    for(Arg.c=0;Arg.c<Arg.maxItemsGeneralControls;Arg.c++) 
-    {
-        mvwprintw(Arg.w2,2,(Arg.distanceW2*Arg.c)+2,"%s",Arg.listGeneralControls[Arg.c]);
-    }
- 
-    Arg.p=0;
-    Arg.c=0;
-    noecho();
-
-    keypad(Arg.w1,TRUE); // se permite meter numeros
-    curs_set(0); // se esconde el cursor normal
-
-    //entrada teclado
-    char keyPress=Arg.com1=wgetch(Arg.w1);
-    while( (keyPress!=Arg.escapeApp1) && (keyPress!=Arg.escapeApp2) )
-    {
-        keyPress=Arg.com1=wgetch(Arg.w1);
-        resizeWindows(Arg);
-        if(Arg.activeWindow==1)
-        {
-            Arg=activateWindows(Arg);
+            getmaxyx(stdscr, windowsDimY, windowsDimX);
+            start_color(); //se enciendo los colores
+            init_pair(1,COLOR_WHITE,COLOR_BLUE);
+            init_pair(2,COLOR_RED,COLOR_WHITE);
+            init_pair(3,COLOR_WHITE,COLOR_RED);
+            curs_set(0); // se esconde el cursor normal
+            noecho();
+            bkgd(COLOR_PAIR(1));
+            attron(COLOR_PAIR(2));
         }
     }
-    //Cierro las ventanas
-    delwin(Arg.w1);
-    delwin(Arg.w2);
-    delwin(Arg.w3);
-    endwin();
-    return 0;
 }
