@@ -59,9 +59,10 @@ int main()
         .listAdvancedControls={"start","stop","reload","restart","status"}
     };
     // nuevas ventanas (Lineas, Columnas, posición Y, posición X)
-    Arg.w1=newwin(26,35,1,1); 
-    Arg.w2=newwin(5,155,27,1);
-    Arg.w3=newwin(26,120,1,36);
+    getmaxyx(stdscr, windowsDimY, windowsDimX);
+    Arg.w1=newwin(windowsDimY-7,35,1,1); 
+    Arg.w2=newwin(5,windowsDimX-5,windowsDimY-6,1);
+    Arg.w3=newwin(windowsDimY-7,windowsDimX-40,1,36);
     Arg.maxItemsProcess=sizeof(Arg.listProcess)/sizeof(Arg.listProcess[0]);
     Arg.maxItemsStates=sizeof(Arg.listStates)/sizeof(Arg.listStates[0]);
     Arg.maxItemsGeneralControls=sizeof(Arg.listGeneralControls)/sizeof(Arg.listGeneralControls[0]);
@@ -119,7 +120,6 @@ int main()
             Arg=activateWindows(Arg);
         }
         Arg.keyPress=wgetch(Arg.w1);
-        //mvwprintw(Arg.w1,10,1,"%d%d",Arg.keyPress,Arg.escapeApp1);
         if( (Arg.keyPress==Arg.escapeApp1) || (Arg.keyPress==Arg.escapeApp2) )
         {
             exitWhile=true;
@@ -138,19 +138,26 @@ void refreshWindows(Args Arg)
     //Función para el resize de las ventanas
     refresh();
     getmaxyx(stdscr, windowsDimY, windowsDimX);
+    /*
+    Arg.w1=newwin(windowsDimY-7,35,1,1); 
+    Arg.w2=newwin(5,windowsDimX-5,windowsDimY-6,1);
+    Arg.w3=newwin(windowsDimY-7,windowsDimX-40,1,36);
+    */
     wresize(Arg.w1,windowsDimY-7,35);
     wresize(Arg.w2,5,windowsDimX-5);
     wresize(Arg.w3,windowsDimY-7,windowsDimX-40);
-    wmove(Arg.w1,1,1);
-    wmove(Arg.w2,windowsDimY-6,1);
-    wmove(Arg.w3,1,36);
+    mvwin(Arg.w1,1,1);
+    mvwin(Arg.w2,windowsDimY-6,1);
+    mvwin(Arg.w3,1,36);
+    wclear(Arg.w1);
+    wclear(Arg.w2);
+    wclear(Arg.w3);
     box(Arg.w1,0,0);
-    wrefresh(Arg.w1);
     box(Arg.w2,0,0);
-    wrefresh(Arg.w2);
     box(Arg.w3,0,0);
+    wrefresh(Arg.w1);
+    wrefresh(Arg.w2);
     wrefresh(Arg.w3);
-    //clearWindows(Arg);
     bkgd(COLOR_PAIR(1));
 }
 
