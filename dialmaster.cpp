@@ -1,10 +1,11 @@
 #include<stdlib.h>
 #include<ncurses.h>
-#include<string>
+#include<string.h>
 #include<sys/ioctl.h>
 #include<stdio.h>
 #define ESCAPE 27
 #define ENTER 10
+#define F1 265
 //Variables Globales
 //Variables donde almacenaremos el tamaño de nuestra pantalla
 int windowsDimY, windowsDimX;
@@ -15,6 +16,7 @@ typedef struct arguments
     char listStates[5][30];
     char listGeneralControls[3][30];
     char listAdvancedControls[5][30];
+    int spacesInListProcess;
     WINDOW *w1;
     WINDOW *w2;
     WINDOW *w3;
@@ -34,6 +36,7 @@ typedef struct arguments
     int activeWindow;
     float timeToRefresh;
     int activeBrush;
+    const char *command;
 } Args;
 
 void refreshWindows(Args Arg);
@@ -67,6 +70,7 @@ int main()
     Arg.maxItemsStates=sizeof(Arg.listStates)/sizeof(Arg.listStates[0]);
     Arg.maxItemsGeneralControls=sizeof(Arg.listGeneralControls)/sizeof(Arg.listGeneralControls[0]);
     Arg.maxItemsAdvancedControls=sizeof(Arg.listAdvancedControls)/sizeof(Arg.listAdvancedControls[0]);
+    Arg.spacesInListProcess=20;
     Arg.distanceW1=2;
     Arg.distanceW2=30;
     Arg.viewDetails=0;
@@ -120,7 +124,7 @@ int main()
             Arg=activateWindows(Arg);
         }
         Arg.keyPress=wgetch(Arg.w1);
-        if( (Arg.keyPress==Arg.escapeApp1) || (Arg.keyPress==Arg.escapeApp2) )
+        if( (Arg.keyPress==Arg.escapeApp1) || (Arg.keyPress==Arg.escapeApp2) || (Arg.keyPress==ESCAPE) )
         {
             exitWhile=true;
         }
@@ -138,11 +142,6 @@ void refreshWindows(Args Arg)
     //Función para el resize de las ventanas
     refresh();
     getmaxyx(stdscr, windowsDimY, windowsDimX);
-    /*
-    Arg.w1=newwin(windowsDimY-7,35,1,1); 
-    Arg.w2=newwin(5,windowsDimX-5,windowsDimY-6,1);
-    Arg.w3=newwin(windowsDimY-7,windowsDimX-40,1,36);
-    */
     wresize(Arg.w1,windowsDimY-7,35);
     wresize(Arg.w2,5,windowsDimX-5);
     wresize(Arg.w3,windowsDimY-7,windowsDimX-40);
@@ -167,8 +166,15 @@ void printProcess(Args Arg,int i)
     //p -> variable de index process
     //s -> variable de index status
     char itemobjects[30];
-    
-    sprintf(itemobjects,"%s - %s",Arg.listProcess[i],Arg.listStates[Arg.s]);
+    int sizeString=strlen(Arg.listProcess[i]);
+    int diffSpaces=Arg.spacesInListProcess-sizeString;
+    char espacios[30];
+    for(int j=0;j<diffSpaces;j++)
+    {
+        espacios[j]=' ';
+    }
+    int sizeString2=strlen(espacios);
+    sprintf(itemobjects,"%s%s%s",Arg.listProcess[i],espacios,Arg.listStates[Arg.s]);
     if(Arg.activeBrush)
     {
         wattron(Arg.w1,A_STANDOUT);
@@ -202,9 +208,8 @@ void printOnSecondWindows(Args Arg)
 {
     //Función para dibujar la primera ventana que cambia frecuentemente
     //c -> variable de index controls
-    char systemCommand[50]="cat /home/fran/Escritorio/prueba";
-    system(systemCommand);
-    mvwprintw(Arg.w2,3,3,"%c",'c');
+    char text=system(Arg.command);
+    mvwprintw(Arg.w3,5,5,"%s",text);
     return;
 }
 
@@ -313,9 +318,8 @@ Args activateWindows(Args Arg)
             Arg.viewDetails=0;
             break;
         }
-        case 10:
+        case ENTER:
         {
-            //case 10 -> KEY_ENTER
             if(Arg.viewDetails==0)
             {
                 //
@@ -328,9 +332,9 @@ Args activateWindows(Args Arg)
             }
             break;
         }
-        case 265:
+        case F1:
         {
-            //case 265 -> KEY_F1
+            Arg.command = "cat /home/fran/Escritorio/prueba";
             printOnSecondWindows(Arg);
             break;
         }
