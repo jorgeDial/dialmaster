@@ -70,7 +70,7 @@ int main()
     Arg.maxItemsStates=sizeof(Arg.listStates)/sizeof(Arg.listStates[0]);
     Arg.maxItemsGeneralControls=sizeof(Arg.listGeneralControls)/sizeof(Arg.listGeneralControls[0]);
     Arg.maxItemsAdvancedControls=sizeof(Arg.listAdvancedControls)/sizeof(Arg.listAdvancedControls[0]);
-    Arg.spacesInListProcess=20;
+    Arg.spacesInListProcess=23;
     Arg.distanceW1=2;
     Arg.distanceW2=30;
     Arg.viewDetails=0;
@@ -165,16 +165,6 @@ void printProcess(Args Arg,int i)
     //Función para dibujar la primera ventana que cambia frecuentemente
     //p -> variable de index process
     //s -> variable de index status
-    char itemobjects[30];
-    int sizeString=strlen(Arg.listProcess[i]);
-    int diffSpaces=Arg.spacesInListProcess-sizeString;
-    char espacios[30];
-    for(int j=0;j<diffSpaces;j++)
-    {
-        espacios[j]=' ';
-    }
-    int sizeString2=strlen(espacios);
-    sprintf(itemobjects,"%s%s%s",Arg.listProcess[i],espacios,Arg.listStates[Arg.s]);
     if(Arg.activeBrush)
     {
         wattron(Arg.w1,A_STANDOUT);
@@ -183,7 +173,8 @@ void printProcess(Args Arg,int i)
     {
         wattroff(Arg.w1,A_STANDOUT);
     }
-    mvwprintw(Arg.w1,i+3,Arg.distanceW1,"%s",itemobjects);
+    mvwprintw(Arg.w1,i+3,Arg.distanceW1,"%s",Arg.listProcess[i]);
+    mvwprintw(Arg.w1,i+3,Arg.distanceW1+Arg.spacesInListProcess,"%s",Arg.listStates[Arg.s]);
     return;
 }
 
