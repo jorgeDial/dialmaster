@@ -6,6 +6,9 @@
 #define ESCAPE 27
 #define ENTER 10
 #define F1 265
+#define F2 266
+#define F3 267
+#define F4 268
 //Variables Globales
 //Variables donde almacenaremos el tamaño de nuestra pantalla
 int windowsDimY, windowsDimX;
@@ -36,13 +39,13 @@ typedef struct arguments
     int activeWindow;
     float timeToRefresh;
     int activeBrush;
-    const char *command;
+    const char *text;
 } Args;
 
 void refreshWindows(Args Arg);
 void printProcess(Args Arg,int i);
 void printAdvancedControls(Args Arg,int i);
-void printOnSecondWindows(Args Arg);
+void printOnW3(Args Arg);
 void highlightOption(Args Arg);
 Args activateWindows(Args Arg);
 void initializeScreen();
@@ -150,7 +153,7 @@ void refreshWindows(Args Arg)
     mvwin(Arg.w3,1,36);
     wclear(Arg.w1);
     wclear(Arg.w2);
-    wclear(Arg.w3);
+    //wclear(Arg.w3);
     box(Arg.w1,0,0);
     box(Arg.w2,0,0);
     box(Arg.w3,0,0);
@@ -195,12 +198,12 @@ void printAdvancedControls(Args Arg,int i)
     return;
 }
 
-void printOnSecondWindows(Args Arg)
+void printOnW3(Args Arg)
 {
-    //Función para dibujar la primera ventana que cambia frecuentemente
-    //c -> variable de index controls
-    char text=system(Arg.command);
-    mvwprintw(Arg.w3,5,5,"%s",text);
+    //Función para dibujar la segunda ventana que cambia frecuentemente, 
+    //que sería la ventana donde se imprimerá todo el texto y los resultados
+    wclear(Arg.w3);
+    mvwprintw(Arg.w3,2,5,"%s",Arg.text);
     return;
 }
 
@@ -268,7 +271,6 @@ void highlightOption(Args Arg)
 Args activateWindows(Args Arg)
 {
     //Función donde la primera ventana se activa
-    
     switch(Arg.keyPress) 
     {
         case KEY_UP:
@@ -318,21 +320,76 @@ Args activateWindows(Args Arg)
             else
             {
                 char systemCommand[50];
-                sprintf(systemCommand,"%s  %s %s","service",Arg.listProcess[Arg.p],Arg.listAdvancedControls[Arg.c]);
-                system(systemCommand);
+                sprintf(systemCommand,"%s %s %s","service",Arg.listProcess[Arg.p],Arg.listAdvancedControls[Arg.c]);
+                int returnSystem;
+                returnSystem=system(systemCommand);
+                mvwprintw(Arg.w3,5,5,"%s",Arg.listProcess[Arg.p]);
             }
             break;
         }
         case F1:
         {
-            Arg.command = "cat /home/fran/Escritorio/prueba";
-            printOnSecondWindows(Arg);
+            //Visión del mainlog
+            if (Arg.listProcess[Arg.p]=="dialserver")
+            {
+                Arg.text="cat /var/log/dialserver/mainlog";
+            }
+            else if (Arg.listProcess[Arg.p]=="dialreport")
+            {
+                Arg.text="cat /var/log/dialreport/mainlog";
+            }
+            else if (Arg.listProcess[Arg.p]=="dialcontact")
+            {
+                Arg.text="cat /var/log/dialcontact/contact";
+            }
+            else if (Arg.listProcess[Arg.p]=="asterisk")
+            {
+                Arg.text="cat /var/log/asterisk/full";
+            }
+            break;
+        }
+        case F2:
+        {
+            //Visión del webservicelog
+            /*
+            Arg.text = "cat /var/log/"+Arg.listProcess[Arg.p]+"/webservicelog";
+            */
+            break;
+        }
+        case F3:
+        {
+            //Visión del spread log
+            /*
+            Arg.text = "cat /var/log/"+Arg.listProcess[Arg.p]+"/spread";
+            */
+            break;
+        }
+        case F4:
+        {
+            //Visión del info de sistema
+            Arg.text = "cat /etc/issue";
+            char text=system(Arg.text);
+            //mvwprintw(Arg.w3,5,5,"%s",text);
+            Arg.text = "cat /etc/issue";
+            int systemValue=system(Arg.text);
+            //mvwprintw(Arg.w3,5,5,"%s",text);
             break;
         }
     }
+    printOnW3(Arg);
     highlightOption(Arg);
     return Arg;
 }
+/*
+
+pathDialappletClientName="/etc/dialappletClientName";
+date=$(date +"%d-%m-%Y_%H%M%S");
+dialappletDB=$(grep "postgresql_password" /etc/dialapplet-web.php | awk -F "'" '{print $4}');
+ipAsterisk=$(grep "AsteriskServerName" /etc/dialapplet-web.php | awk -F "'" '{print $4}');
+verify=$(cat /etc/issue | sed -n 1p | awk -F " " '{print $3}' | awk -F "." '{print $1}');
+verify=$(php -v | sed -n 1p | awk -F " " '{print $2}' | awk -F "." '{print $2}');
+
+*/
 
 void initializeScreen()
 {
