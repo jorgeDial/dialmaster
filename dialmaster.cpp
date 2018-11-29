@@ -45,7 +45,7 @@ typedef struct arguments
 void refreshWindows(Args Arg);
 void printProcess(Args Arg,int i);
 void printAdvancedControls(Args Arg,int i);
-void printOnW3(Args Arg);
+void exeCommand(Args Arg);
 void highlightOption(Args Arg);
 Args activateWindows(Args Arg);
 void initializeScreen();
@@ -86,6 +86,7 @@ int main()
     Arg.activeWindow=1;
     Arg.timeToRefresh=1;
     Arg.activeBrush=1;
+    Arg.text="";
 
     /* Init App */
     initializeScreen();
@@ -198,12 +199,13 @@ void printAdvancedControls(Args Arg,int i)
     return;
 }
 
-void printOnW3(Args Arg)
+void exeCommand(Args Arg)
 {
-    //Función para dibujar la segunda ventana que cambia frecuentemente, 
-    //que sería la ventana donde se imprimerá todo el texto y los resultados
-    wclear(Arg.w3);
-    mvwprintw(Arg.w3,2,5,"%s",Arg.text);
+    //Función para ejecutar los comandos
+    char systemCommand[500];
+    sprintf(systemCommand,"%s",Arg.text);
+    int returnSystem;
+    returnSystem=system(systemCommand);
     return;
 }
 
@@ -323,45 +325,83 @@ Args activateWindows(Args Arg)
                 sprintf(systemCommand,"%s %s %s","service",Arg.listProcess[Arg.p],Arg.listAdvancedControls[Arg.c]);
                 int returnSystem;
                 returnSystem=system(systemCommand);
-                mvwprintw(Arg.w3,5,5,"%s",Arg.listProcess[Arg.p]);
             }
             break;
         }
         case F1:
         {
             //Visión del mainlog
-            if (Arg.listProcess[Arg.p]=="dialserver")
+            if (Arg.p==0)
             {
                 Arg.text="cat /var/log/dialserver/mainlog";
             }
-            else if (Arg.listProcess[Arg.p]=="dialreport")
+            else if (Arg.p==1)
             {
                 Arg.text="cat /var/log/dialreport/mainlog";
             }
-            else if (Arg.listProcess[Arg.p]=="dialcontact")
+            else if (Arg.p==2)
             {
                 Arg.text="cat /var/log/dialcontact/contact";
             }
-            else if (Arg.listProcess[Arg.p]=="asterisk")
+            else if (Arg.p==3)
             {
                 Arg.text="cat /var/log/asterisk/full";
             }
+            else
+            {
+                Arg.text="";
+            }
+            exeCommand(Arg);
             break;
         }
         case F2:
         {
             //Visión del webservicelog
-            /*
-            Arg.text = "cat /var/log/"+Arg.listProcess[Arg.p]+"/webservicelog";
-            */
+            if (Arg.p==0)
+            {
+                Arg.text="cat /var/log/dialserver/webservicelog";
+            }
+            else if (Arg.p==1)
+            {
+                Arg.text="cat /var/log/dialreport/websocketlog";
+            }
+            else if (Arg.p==2)
+            {
+                Arg.text="cat /var/log/dialcontact/websocket";
+            }
+            else if (Arg.p==3)
+            {
+                Arg.text="cat /var/log/asterisk/full";
+            }
+            else
+            {
+                Arg.text="";
+            }
             break;
         }
         case F3:
         {
             //Visión del spread log
-            /*
-            Arg.text = "cat /var/log/"+Arg.listProcess[Arg.p]+"/spread";
-            */
+            if (Arg.p==0)
+            {
+                Arg.text="cat /var/log/dialserver/webservicelog";
+            }
+            else if (Arg.p==1)
+            {
+                Arg.text="cat /var/log/dialreport/websocketlog";
+            }
+            else if (Arg.p==2)
+            {
+                Arg.text="cat /var/log/dialcontact/websocket";
+            }
+            else if (Arg.p==3)
+            {
+                Arg.text="cat /var/log/asterisk/full";
+            }
+            else
+            {
+                Arg.text="";
+            }
             break;
         }
         case F4:
@@ -376,7 +416,8 @@ Args activateWindows(Args Arg)
             break;
         }
     }
-    printOnW3(Arg);
+    wclear(Arg.w3);
+    mvwprintw(Arg.w3,2,5,"%s","");
     highlightOption(Arg);
     return Arg;
 }
